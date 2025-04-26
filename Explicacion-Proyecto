@@ -1,0 +1,55 @@
+Explicación del Código: Emulador NE555 con ESP32Este proyecto implementa un emulador del circuito integrado NE555, un temporizador muy popular, utilizando un microcontrolador ESP32. El objetivo es recrear la funcionalidad del NE555 en sus modos Astable y Monostable, y proporcionar una interfaz web para controlar y configurar el circuito emulado.
+1. Descripción GeneralEl código se estructura en varias partes principales:
+Librerías y Definiciones: Se incluyen las librerías de ESP-IDF (Espressif IoT Development Framework) para el manejo de periféricos (GPIO, LEDC), red Wi-Fi, servidor HTTP y otras funcionalidades del sistema. Se definen constantes para la configuración de la red Wi-Fi, los pines GPIO utilizados y la configuración del PWM.
+Variables Globales: Se declaran variables globales para almacenar el estado del sistema, como el estado de los modos Astable y Monostable.
+Funciones Principales:
+app_main(): Función principal que inicializa el sistema, incluyendo la memoria flash no volátil (NVS), la red Wi-Fi en modo SoftAP (Access Point), los pines GPIO y el servidor HTTP.
+wifi_init_softap(): Configura el ESP32 para que funcione como un punto de acceso Wi-Fi, permitiendo que otros dispositivos se conecten a él.
+start_webserver(): Inicia un servidor HTTP en el ESP32. Este servidor es el que sirve la página web de control y recibe las peticiones para configurar el NE555 emulado.index_handler(): Sirve la página web principal (index.html) que contiene el formulario para configurar el NE555.
+astable_handler() y monostable_handler():
+ Estas funciones se llaman cuando el usuario envía el formulario desde la página web, especificando los valores de los componentes (resistencias y condensador) para los modos Astable y Monostable, respectivamente.  Calculan la frecuencia, el ciclo de trabajo (en el modo Astable) o el tiempo del pulso (en el modo Monostable) y configuran el PWM y los GPIOs.
+ configurar_pwm(): Configura el periférico PWM (Pulse Width Modulation) del ESP32 para generar una señal con la frecuencia y el ciclo de trabajo calculados en el modo Astable.
+ Página Web (index.html): La página web contiene dos formularios, uno para configurar el NE555 en modo Astable y otro en modo Monostable. 
+ Los formularios permiten al usuario ingresar los valores de los componentes del circuito (resistencias y condensador).  Cuando el usuario envía un formulario, se realiza una petición HTTP al ESP32 para procesar los datos y configurar el NE555 emulado.  También hay botones para "Detener Astable" y "Detener Monostable", aunque en el código proporcionado, ambos llaman a la misma función detenerPWM.2. 
+ 
+ Flujo de Operación
+ El ESP32 se enciende y se configura como un punto de acceso Wi-Fi.
+ El ESP32 inicia un servidor HTTP.
+ Un usuario se conecta a la red Wi-Fi del ESP32 con un dispositivo (teléfono, computadora, etc.) y abre un navegador web.
+ El usuario accede a la página web servida por el ESP32, donde ve los formularios para configurar los modos Astable y Monostable.
+ El usuario introduce los valores de los componentes en el formulario y lo envía.El ESP32 recibe los datos del formulario, calcula los parámetros del NE555 (frecuencia, ciclo de trabajo, tiempo de pulso), configura el PWM y activa los pines GPIO correspondientes.El ESP32 envía una respuesta HTTP al navegador web con los resultados del cálculo.
+ El usuario puede ver los resultados en la página web.3. 
+ 
+ Detalles Técnicos
+
+ Modo Astable: El ESP32 genera una señal PWM cuya frecuencia y ciclo de trabajo dependen de los valores de las resistencias y el condensador introducidos por el usuario.  La función configurar_pwm() es la que se encarga de esto.
+
+ Modo Monostable: El ESP32 genera un pulso de duración determinada por los valores de la resistencia y el condensador.  Esto se logra controlando el estado de un pin GPIO durante un tiempo calculado.
+ 
+ Servidor HTTP: El servidor HTTP se utiliza para proporcionar una interfaz de usuario sencilla a través de un navegador web.  No se requiere ninguna aplicación especial en el dispositivo del usuario.
+ 
+ ESP32 y ESP-IDF: El código está escrito para el ESP32, utilizando el framework ESP-IDF, que proporciona las herramientas necesarias para desarrollar aplicaciones para este microcontrolador.
+
+ 4. Descripción del ProyectoEste proyecto 
+
+ implementa un circuito emulador NE555 usando un ESP32. El NE555 es un circuito integrado muy popular que se utiliza en una variedad de aplicaciones de temporización y generación de pulsos. Este proyecto busca recrear la funcionalidad del NE555 usando un ESP32 y proporcionar una interfaz web para controlar y configurar el circuito emulado.
+ Las principales funcionalidades implementadas son:
+ 
+ Modo Astable: El ESP32 genera una señal PWM cuya frecuencia y ciclo de trabajo dependen de los valores de las resistencias y el condensador introducidos por el usuario.
+ Modo Monostable: El ESP32 genera un pulso de duración determinada por los valores de la resistencia y el condensador.
+ Interfaz Web: El usuario puede configurar los parámetros del NE555 a través de una página web servida por el ESP32.
+ 
+ 5.  Información sobre el ESP32-WROOM-32D
+ 
+ El corazón de este proyecto es el módulo ESP32-WROOM-32D de Espressif. Este módulo es una potente solución SoC (System on a Chip) que integra:
+ Procesador: Un procesador de doble núcleo de 32 bits Tensilica LX6.
+ Conectividad: Wi-Fi 802.11 b/g/n y Bluetooth 4.2 (BR/EDR y BLE).
+ Memoria: 4MB de Flash y 520KB de SRAM.
+ Periféricos: Una amplia variedad de periféricos, incluyendo GPIO, ADC, DAC, UART, SPI, I2C, PWM, etc.
+ 
+ El ESP32-WROOM-32D es ideal para proyectos de IoT debido a su conectividad inalámbrica, su potencia de procesamiento y su bajo consumo de energía. En este proyecto, se utiliza su capacidad de:Actuar como un punto de acceso Wi-Fi, permitiendo que los usuarios se conecten a él con sus dispositivos.Ejecutar un servidor web, sirviendo la interfaz de usuario al usuario.Generar señales PWM precisas para controlar el circuito NE555 emulado.Controlar los pines GPIO para simular la salida del NE555.En resumen, el ESP32-WROOM-32D proporciona la potencia y la flexibilidad necesarias para emular con precisión el NE555 y proporcionar una experiencia de usuario cómoda a través de la interfaz web.
+ 
+ 6. Posibles Mejoras/Ampliaciones
+ Implementar la función detenerPWM para detener la señal PWM en el pin correspondiente. Actualmente, ambos botones "Detener" hacen lo mismo.
+ Añadir más validaciones a los datos introducidos por el usuario en la página web.Mejorar la interfaz web, quizás utilizando JavaScript para hacerla más interactiva.Implementar otras funcionalidades del NE555, como el modo de disparo por tensión.
+ Permitir la configuración del pin de salida del NE555.Este proyecto demuestra cómo un microcontrolador ESP32 puede utilizarse para emular un circuito electrónico clásico como el NE555, proporcionando una forma flexible y controlable de generar señales de temporización.
