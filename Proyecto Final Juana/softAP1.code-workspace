@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "../softAP"
+		},
+		{
+			"name": "ME",
+			"path": "../../../../../VSCode/ME"
+		}
+	],
+	"settings": {}
+}
