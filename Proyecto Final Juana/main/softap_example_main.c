@@ -17,6 +17,7 @@
 #include "esp_netif.h"
 #include "esp_http_server.h"
 #include "driver/ledc.h"
+#include "driver/adc.h"
 #include "driver/gpio.h"
 
 #define WIFI_SSID "JUANA-Proyecto"
@@ -30,6 +31,9 @@
 
 #define LED_ASTABLE_GPIO    21
 #define LED_MONOSTABLE_GPIO 22
+
+#define BUTTON_GPIO 23  //  el pin que use para el botón
+#define POTENCIOMETRO_GPIO 34
 
 static const char index_html[] =
 "<!DOCTYPE html><html><head><title>NE555 ESP32</title>"
@@ -47,7 +51,11 @@ static const char index_html[] =
 "  return false;"
 "}"
 "function detenerPWM() {"
-"  fetch('/detener_pwm').then(r => r.text()).then(alert);"
+"  fetch('/detener_PWM');"
+"  document.getElementById('form_astable').reset();"
+"  document.getElementById('form_monostable').reset();"
+"  document.getElementById('resultado_astable').innerHTML = '';"
+"  document.getElementById('resultado_monostable').innerHTML = '';"
 "}"
 "</script></head><body>"
 "<h2> Esta página emula el temporizador NE555 en modos Astable y Monostable usando ESP32.</h2>"
@@ -129,10 +137,10 @@ static esp_err_t astable_handler(httpd_req_t *req) {
 
     char resp[512];
     snprintf(resp, sizeof(resp),
-        "<h3>Resultado Modo Astable</h3>"
-        "<p><strong>Frecuencia:</strong> %.2f Hz</p>"
-        "<p><strong>Ciclo de trabajo:</strong> %.2f%%</p>"
-        "<p><strong></strong></p>", frecuencia, duty);
+    "<h3>Resultado Modo Astable</h3>"
+    "<p><strong>Frecuencia:</strong> %.2f Hz</p>"
+    "<p><strong>Ciclo de trabajo:</strong> %.2f%%</p>"
+    "<p><strong>Señal PWM:</strong> %.2f Hz, %.2f%% duty</p>", frecuencia, duty, frecuencia, duty);
 
     httpd_resp_sendstr(req, resp);
     return ESP_OK;
@@ -181,6 +189,13 @@ void start_webserver(void) {
     }
 }
 
+void configurar_adc() {
+    adc1_config_width(ADC_WIDTH_BIT_12);  // 12 bits
+    adc1_config_channel_atten(ADC1_CHANNEL_6, ADC_ATTEN_DB_11); // GPIO34
+}
+
+
+
 void wifi_init_softap() {
     esp_netif_create_default_wifi_ap();
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -204,6 +219,28 @@ void wifi_init_softap() {
     esp_wifi_start();
 }
 
+
+
+void actualizar_pwm_con_potenciometro() {
+    int raw = adc1_get_raw(ADC1_CHANNEL_6);
+    float porcentaje = (float)raw / 4095.0f; // Normalizar de 0 a 1
+    float nuevo_duty = porcentaje * 100.0f;  // Convertir a porcentaje de duty cycle
+
+    ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL, (nuevo_duty / 100.0f) * ((1 << LEDC_DUTY_RES) - 1));
+    ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL);
+}
+
+void configurar_boton() {
+    gpio_config_t io_conf = {
+        .pin_bit_mask = (1ULL << GPIO_NUM_0),
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type = GPIO_INTR_DISABLE
+    };
+    gpio_config(&io_conf);
+}
+
 void app_main(void) {
     nvs_flash_init();
     esp_netif_init();
@@ -211,7 +248,20 @@ void app_main(void) {
 
     gpio_set_direction(LED_ASTABLE_GPIO, GPIO_MODE_OUTPUT);
     gpio_set_direction(LED_MONOSTABLE_GPIO, GPIO_MODE_OUTPUT);
+    gpio_set_direction(LED_MONOSTABLE_GPIO, GPIO_MODE_INPUT);
+
+    
+    configurar_pwm(5000, 50);
+    configurar_adc();
+    configurar_boton();
+    
 
     wifi_init_softap();
     start_webserver();
+
+    while (true) {
+        actualizar_pwm_con_potenciometro();  // Leer potenciómetro y actualizar PWM
+        vTaskDelay(pdMS_TO_TICKS(100));      // Esperar 100 ms
+    }
+
 }
